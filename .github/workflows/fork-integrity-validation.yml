@@ -1,0 +1,30 @@
+# Copyright 2026 The Kubernetes Authors.
+# Licensed under the Apache License, Version 2.0.
+name: Verify container plugin integrity
+on:
+  push:
+    branches: [verify/plugin-integrity]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Check verifier CLI
+        run: node --test plugins/pluginctl/test-archive-integrity.js
+      - name: Build the production plugin stage
+        run: |
+          docker build --target static-plugins -t headlamp-verified-plugins .
+          docker run --rm headlamp-verified-plugins node -e "require('node:fs').accessSync('/plugins/prometheus/main.js')"
+      - name: Reject a modified archive digest
+        run: |
+          node -e "const fs=require('node:fs'); const p='container/build-manifest.json'; const m=JSON.parse(fs.readFileSync(p)); m.plugins[0].sha256='0'.repeat(64); fs.writeFileSync(p,JSON.stringify(m));"
+          if docker build --target static-plugins -t headlamp-rejected-plugins . > /tmp/rejected-build.log 2>&1; then
+            cat /tmp/rejected-build.log
+            exit 1
+          fi
+          grep 'SHA-256 mismatch' /tmp/rejected-build.log
