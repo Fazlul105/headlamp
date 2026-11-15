@@ -9,6 +9,7 @@ on:
     - 'app/**'
     - 'backend/**'
     - 'tools/run-backend.js'
+    - 'plugins/pluginctl/src/archive-integrity.js'
   push:
     branches:
       - main
@@ -21,6 +22,7 @@ on:
     - 'app/**'
     - 'backend/**'
     - 'tools/run-backend.js'
+    - 'plugins/pluginctl/src/archive-integrity.js'
 
 permissions:
   contents: read
